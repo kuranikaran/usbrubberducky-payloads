@@ -1,0 +1,57 @@
+REM ==========================================
+REM Physical Access Blast Radius Estimator
+REM Platform: macOS
+REM Mode: Read-only assessment
+REM ==========================================
+
+DELAY 4000
+
+REM --- Open Terminal via Spotlight ---
+GUI SPACE
+DELAY 500
+STRING Terminal
+ENTER
+DELAY 2000
+
+REM --- Execute assessment in a single shell ---
+STRING bash -c '
+mkdir -p "$HOME/Desktop/PABRE_Report"
+REPORT="$HOME/Desktop/PABRE_Report/PABRE_Report.txt"
+
+echo "PABRE - Physical Access Blast Radius Estimation" > "$REPORT"
+echo "Generated: $(date)" >> "$REPORT"
+echo "----------------------------------------" >> "$REPORT"
+
+echo "OS Information:" >> "$REPORT"
+sw_vers -productName >> "$REPORT"
+sw_vers -productVersion >> "$REPORT"
+
+echo "User Context:" >> "$REPORT"
+echo "User: $(whoami)" >> "$REPORT"
+
+ISADMIN=$(id -Gn "$(whoami)" | grep -qw admin && echo YES || echo NO)
+echo "Local Admin: $ISADMIN" >> "$REPORT"
+
+DOMAIN=$(dsconfigad -show 2>/dev/null | awk -F": " "/Active Directory Domain/{print \$2}")
+if [ -z "$DOMAIN" ]; then
+  echo "Domain Joined: NO" >> "$REPORT"
+else
+  echo "Domain Joined: YES ($DOMAIN)" >> "$REPORT"
+fi
+
+echo "----------------------------------------" >> "$REPORT"
+echo "Blast Radius Estimation:" >> "$REPORT"
+
+if [ "$ISADMIN" = "YES" ] && [ -n "$DOMAIN" ]; then
+  echo "Estimated Blast Radius: ORGANIZATION-WIDE" >> "$REPORT"
+elif [ "$ISADMIN" = "YES" ]; then
+  echo "Estimated Blast Radius: TEAM / SHARED" >> "$REPORT"
+else
+  echo "Estimated Blast Radius: LOCAL ONLY" >> "$REPORT"
+fi
+
+echo "----------------------------------------" >> "$REPORT"
+echo "Notes:" >> "$REPORT"
+echo "This assessment performed no exploitation, credential access, or persistence." >> "$REPORT"
+'
+ENTER
